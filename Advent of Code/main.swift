@@ -9,31 +9,49 @@ import RegexHelper
 func main() {
     let fileUrl = URL(fileURLWithPath: "./aoc-input")
     guard let inputString = try? String(contentsOf: fileUrl, encoding: .utf8) else { fatalError("Invalid input") }
+    let string = inputString.components(separatedBy: "\n")
+        .filter { !$0.isEmpty }.first!
+    let arr = Array(string)
+    let line = arr.map { Int(String($0))! }
     
-    let lines = inputString.components(separatedBy: "\n")
-        .filter { !$0.isEmpty }
+    var fileSystem = [Int]()
+    var fileId = 0
+    var emptyBlockIds: [Int] = []
     
-    // Sample algorithm
-    var scoreboard = [String: Int]()
-    lines.forEach { line in
-        let (name, score) = parseLine(line)
-        scoreboard[name] = score
+    for i in 0..<line.count {
+        if i.isMultiple(of: 2) {
+            for _ in 0..<line[i] {
+                fileSystem.append(fileId)
+            }
+            fileId += 1
+        } else { // empty space
+            for _ in 0..<line[i] {
+                fileSystem.append(-1)
+                emptyBlockIds.append(fileSystem.count - 1)
+            }
+        }
     }
-    scoreboard
-        .sorted { lhs, rhs in
-            lhs.value > rhs.value
+    
+    var currentIndex = fileSystem.count
+    while currentIndex > 0 && !emptyBlockIds.isEmpty {
+        currentIndex -= 1
+        if fileSystem[currentIndex] != -1 {
+            let emptyBlockId = emptyBlockIds.removeFirst()
+            if emptyBlockId > currentIndex {
+                break
+            }
+            fileSystem[emptyBlockId] = fileSystem[currentIndex]
+            fileSystem[currentIndex] = -1
         }
-        .forEach { name, score in
-            print("\(name) \(score) pts")
-        }
-}
 
-func parseLine(_ line: String) -> (name: String, score: Int) {
-    let helper = RegexHelper(pattern: #"([\-\w]*)\s(\d+)"#)
-    let result = helper.parse(line)
-    let name = result[0]
-    let score = Int(result[1])!
-    return (name: name, score: score)
+    }
+        
+    var checksum = 0
+    for i in 0..<fileSystem.count {
+        if fileSystem[i] == -1 { break }
+        checksum += fileSystem[i] * i
+    }
+    print(checksum)
 }
 
 main()
